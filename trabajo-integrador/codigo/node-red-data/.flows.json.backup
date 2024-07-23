@@ -1,0 +1,461 @@
+[
+    {
+        "id": "164dcb0874348152",
+        "type": "tab",
+        "label": "Flow 1",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "5c569a191ab599c8",
+        "type": "mqtt-broker",
+        "name": "MQTT-hosted",
+        "broker": "91.121.93.94",
+        "port": "1883",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "7427d4f110b79bd3",
+        "type": "influxdb",
+        "hostname": "127.0.0.1",
+        "port": "8086",
+        "protocol": "http",
+        "database": "iot_data",
+        "name": "Influx-local",
+        "usetls": false,
+        "tls": "",
+        "influxdbVersion": "1.8-flux",
+        "url": "http://influxdb:8086",
+        "timeout": "10",
+        "rejectUnauthorized": true
+    },
+    {
+        "id": "529a4754ba6a7368",
+        "type": "telegram bot",
+        "botname": "Sensor bot",
+        "usernames": "pvaccaro,CommanderJurten,apanigo",
+        "chatids": "",
+        "baseapiurl": "",
+        "testenvironment": false,
+        "updatemode": "polling",
+        "pollinterval": "300",
+        "usesocks": false,
+        "sockshost": "",
+        "socksprotocol": "socks5",
+        "socksport": "6667",
+        "socksusername": "anonymous",
+        "sockspassword": "",
+        "bothost": "",
+        "botpath": "",
+        "localbotport": "8443",
+        "publicbotport": "8443",
+        "privatekey": "",
+        "certificate": "",
+        "useselfsignedcertificate": false,
+        "sslterminated": false,
+        "verboselogging": false
+    },
+    {
+        "id": "081d2c320828ebba",
+        "type": "mqtt in",
+        "z": "164dcb0874348152",
+        "name": "MQTT",
+        "topic": "esp/supercomplex/system/temperature",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "5c569a191ab599c8",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 410,
+        "y": 520,
+        "wires": [
+            [
+                "7fff659996db0798"
+            ]
+        ]
+    },
+    {
+        "id": "70927c507eeca57b",
+        "type": "influxdb out",
+        "z": "164dcb0874348152",
+        "influxdb": "7427d4f110b79bd3",
+        "name": "Write",
+        "measurement": "temperature",
+        "precision": "",
+        "retentionPolicy": "",
+        "database": "iot_data",
+        "precisionV18FluxV20": "ms",
+        "retentionPolicyV18Flux": "",
+        "org": "organisation",
+        "bucket": "bucket",
+        "x": 1050,
+        "y": 440,
+        "wires": []
+    },
+    {
+        "id": "7fff659996db0798",
+        "type": "function",
+        "z": "164dcb0874348152",
+        "name": "Map string to float",
+        "func": "var temperature = parseFloat(msg.payload);\n\nif (isNaN(temperature)) {\n    // Ignore the message if the payload cannot be converted to a valid number - this happens some times when deploying\n    return null;\n}\n\nmsg.topic = \"temperature\";\nmsg.payload = { value: temperature };\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 610,
+        "y": 520,
+        "wires": [
+            [
+                "73c9b46a94da1c0a"
+            ]
+        ]
+    },
+    {
+        "id": "1679edb45bf1cff4",
+        "type": "telegram sender",
+        "z": "164dcb0874348152",
+        "name": "",
+        "bot": "529a4754ba6a7368",
+        "haserroroutput": false,
+        "outputs": 1,
+        "x": 1770,
+        "y": 780,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "adb482e3fd4e1aa4",
+        "type": "function",
+        "z": "164dcb0874348152",
+        "name": "Map message",
+        "func": "// Extract necessary data from incoming message\nvar text = msg.payload.content;\nvar chatId = global.get('chatId');\nvar fromName = msg.originalMessage.from.first_name;\n\nnode.warn(msg);\nnode.warn(fromName);\n\nif (text === '/estado') {\n    msg.command = 'estado';\n} else if (text === '/abrir') {\n    msg.command = 'abrir';\n} else if (text === '/cerrar') {\n    msg.command = 'cerrar';\n} else {\n    msg.command = 'welcome';\n}\n\n// Assign necessary data to the output message\nmsg.chatId = chatId;\nmsg.fromName = fromName;\n\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 580,
+        "y": 840,
+        "wires": [
+            [
+                "9595d103ebb8c6ea"
+            ]
+        ]
+    },
+    {
+        "id": "3ab8f66e85c260ca",
+        "type": "telegram receiver",
+        "z": "164dcb0874348152",
+        "name": "",
+        "bot": "529a4754ba6a7368",
+        "saveDataDir": "",
+        "filterCommands": false,
+        "x": 330,
+        "y": 840,
+        "wires": [
+            [
+                "adb482e3fd4e1aa4",
+                "6904b89ed7f1aba9"
+            ],
+            [
+                "6904b89ed7f1aba9"
+            ]
+        ]
+    },
+    {
+        "id": "9595d103ebb8c6ea",
+        "type": "switch",
+        "z": "164dcb0874348152",
+        "name": "Switch command",
+        "property": "command",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "estado",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "abrir",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "cerrar",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "welcome",
+                "vt": "str"
+            }
+        ],
+        "checkall": "false",
+        "repair": false,
+        "outputs": 4,
+        "x": 830,
+        "y": 840,
+        "wires": [
+            [
+                "6cdf0532d089ce1d"
+            ],
+            [
+                "e20d38c822579caa"
+            ],
+            [
+                "8a429dabecd89eef"
+            ],
+            [
+                "f473690c7244781f"
+            ]
+        ]
+    },
+    {
+        "id": "6cdf0532d089ce1d",
+        "type": "influxdb in",
+        "z": "164dcb0874348152",
+        "influxdb": "7427d4f110b79bd3",
+        "name": "Get last temp",
+        "query": "from(bucket: \"iot_data/autogen\")\n  |> range(start: -1h)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"temperature\")\n  |> last()\n",
+        "rawOutput": false,
+        "precision": "",
+        "retentionPolicy": "",
+        "org": "organisation",
+        "x": 1150,
+        "y": 740,
+        "wires": [
+            [
+                "dc753bae14790aa6"
+            ]
+        ]
+    },
+    {
+        "id": "dc753bae14790aa6",
+        "type": "function",
+        "z": "164dcb0874348152",
+        "name": "Status",
+        "func": "var temperatureData = msg.payload[0];\nvar winStatus = global.get('ventanaAbierta');\n\nif (temperatureData) {\n    var temperature = temperatureData._value;\n    msg.payload = {\n        chatId: msg.chatId,\n        type: \"message\",\n        content: \"Temperatura actual: \" + temperature + \"°C | Ventanas: \" + (winStatus ? \"abiertas\" : \"cerradas\"),\n        options: {\n            chat_id: msg.chatId,\n            text: \"Temperatura actual: \" + temperature + \"°C | Ventanas: \" + (winStatus ? \"abiertas\" : \"cerradas\"),\n        }\n    };\n} else {\n    msg.payload = {\n        chatId: msg.chatId,\n        type: \"message\",\n        content: \"No hay datos disponibles de temperatura.\",\n        options: {\n            chat_id: msg.chatId,\n            text: \"No hay datos disponibles de temperatura.\"\n        }\n    };\n}\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1330,
+        "y": 740,
+        "wires": [
+            [
+                "1679edb45bf1cff4"
+            ]
+        ]
+    },
+    {
+        "id": "e20d38c822579caa",
+        "type": "function",
+        "z": "164dcb0874348152",
+        "name": "Open win",
+        "func": "var winStatus = global.get('ventanaAbierta');\nvar motorActivo = global.get('motorActivo');\nvar chatId = msg.chatId;\nvar responseMessage = \"\";\n\nif (!motorActivo) {\n    if (!winStatus) {\n        // Simulate opening windows\n        global.set('ventanaAbierta', true);\n        setTimeout(function () {\n            global.set('motorActivo', false); // Set motor inactive after 10 seconds\n        }, 10000);\n        global.set('motorActivo', true);\n        responseMessage = \"Comando recibido. Ventanas abiertas.\";\n    } else {\n        responseMessage = \"Ventanas ya abiertas. Comando no ejecutado.\";\n    }\n} else {\n    responseMessage = \"Motor ya funcionando. Comando no ejecutado.\";\n}\n\nmsg.payload = {\n    chatId: chatId,\n    type: \"message\",\n    content: responseMessage\n};\n\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1160,
+        "y": 800,
+        "wires": [
+            [
+                "1679edb45bf1cff4"
+            ]
+        ]
+    },
+    {
+        "id": "8a429dabecd89eef",
+        "type": "function",
+        "z": "164dcb0874348152",
+        "name": "Close win",
+        "func": "var winStatus = global.get('ventanaAbierta');\nvar motorActivo = global.get('motorActivo');\nvar chatId = msg.chatId;\nvar responseMessage = \"\";\n\nif (!motorActivo) {\n    if (winStatus) {\n        // Simulate closing windows\n        global.set('ventanaAbierta', false);\n        setTimeout(function () {\n            global.set('motorActivo', false); // Set motor inactive after 10 seconds\n        }, 10000);\n        global.set('motorActivo', true);\n        responseMessage = \"Cerrando ventanas. Comando recibido.\";\n    } else {\n        responseMessage = \"Ventanas ya cerradas. Comando no ejecutado.\";\n    }\n} else {\n    responseMessage = \"Motor ya funcionando. Comando no ejecutado.\";\n}\n\nmsg.payload = {\n    chatId: chatId,\n    type: \"message\",\n    content: responseMessage\n};\n\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1160,
+        "y": 860,
+        "wires": [
+            [
+                "1679edb45bf1cff4"
+            ]
+        ]
+    },
+    {
+        "id": "f473690c7244781f",
+        "type": "function",
+        "z": "164dcb0874348152",
+        "name": "Welcome msg",
+        "func": "var welcomeMessage = \"Hola, \" + msg.fromName + \"!\\n\";\nwelcomeMessage += \"Comandos.\\n\\n\";\nwelcomeMessage += \"/estado: para ver el estado de las ventanas y temperatura\\n\";\nwelcomeMessage += \"/abrir: para abrir las ventanas\\n\";\nwelcomeMessage += \"/cerrar: para cerrar las ventanas\\n\";\nmsg.payload = {\n    chatId: msg.chatId,\n    type: \"message\",\n    content: welcomeMessage\n};\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1180,
+        "y": 940,
+        "wires": [
+            [
+                "1679edb45bf1cff4"
+            ]
+        ]
+    },
+    {
+        "id": "73c9b46a94da1c0a",
+        "type": "switch",
+        "z": "164dcb0874348152",
+        "name": "Verify number",
+        "property": "payload.value",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "neq",
+                "v": "NaN",
+                "vt": "num"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 1,
+        "x": 820,
+        "y": 520,
+        "wires": [
+            [
+                "70927c507eeca57b",
+                "af74a40de3cb33b3"
+            ]
+        ]
+    },
+    {
+        "id": "af74a40de3cb33b3",
+        "type": "function",
+        "z": "164dcb0874348152",
+        "name": "Close win updates",
+        "func": "var winStatus = global.get('ventanaAbierta');\nvar motorActivo = global.get('motorActivo');\nvar temperature = msg.payload.value;\nvar responseMessage = \"\";\n\nif (!motorActivo) {\n    if (((winStatus) && temperature < 15) || ((!winStatus) && temperature > 30)) {\n        responseMessage = \"Temperatura actual: \" + temperature + \"°C | \" + (winStatus ? \"Cerrando\" : \"Abriendo\") + \" ventanas\";\n        global.set('ventanaAbierta', !winStatus);\n        global.set('motorActivo', true);\n        setTimeout(function () {\n            global.set('motorActivo', false); // Set motor inactive after 10 seconds\n        }, 10000);\n    }\n}\n\nmsg.payload = {\n    chatId: global.get('chatId'),\n    type: \"message\",\n    content: responseMessage\n};\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1110,
+        "y": 520,
+        "wires": [
+            [
+                "f0650064bccb3454"
+            ]
+        ]
+    },
+    {
+        "id": "f0650064bccb3454",
+        "type": "switch",
+        "z": "164dcb0874348152",
+        "name": "",
+        "property": "payload.content",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "neq",
+                "v": "",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 1,
+        "x": 1390,
+        "y": 520,
+        "wires": [
+            [
+                "1679edb45bf1cff4"
+            ]
+        ]
+    },
+    {
+        "id": "9176d6bcdb552db0",
+        "type": "config",
+        "z": "164dcb0874348152",
+        "name": "Setup",
+        "properties": [
+            {
+                "p": "motorActivo",
+                "pt": "global",
+                "to": "false",
+                "tot": "bool"
+            },
+            {
+                "p": "ventanaAbierta",
+                "pt": "global",
+                "to": "false",
+                "tot": "bool"
+            },
+            {
+                "p": "chatId",
+                "pt": "global",
+                "to": "-1002166359624",
+                "tot": "str"
+            }
+        ],
+        "active": true,
+        "x": 410,
+        "y": 680,
+        "wires": []
+    },
+    {
+        "id": "6904b89ed7f1aba9",
+        "type": "debug",
+        "z": "164dcb0874348152",
+        "name": "debug 1",
+        "active": true,
+        "tosidebar": true,
+        "console": true,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "payload",
+        "statusType": "auto",
+        "x": 590,
+        "y": 740,
+        "wires": []
+    }
+]

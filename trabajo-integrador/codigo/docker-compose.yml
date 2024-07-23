@@ -1,0 +1,35 @@
+version: "2"
+services:
+  influxdb:
+    image: influxdb:1.8
+    ports:
+      - "8086:8086"
+    environment:
+      - INFLUXDB_DB=iot_data 
+      - INFLUXDB_HTTP_FLUX_ENABLED=true
+    restart: unless-stopped
+
+  nodered:
+    image: nodered/node-red
+    ports:
+      - "1880:1880"
+    volumes:
+      - ./node-red-data:/data
+      - /dev/snd:/dev/snd
+    links:
+      - influxdb
+    restart: unless-stopped
+  
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./grafana/grafana-data:/var/lib/grafana  # Grafana data directory
+      - ./grafana/grafana-provisioning:/etc/grafana/provisioning  # Provisioning directory
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    links:
+      - influxdb
+    restart: unless-stopped
